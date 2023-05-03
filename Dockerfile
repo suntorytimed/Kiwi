@@ -6,8 +6,7 @@ RUN microdnf -y --nodocs install python3 mariadb-connector-c libpq \
     microdnf -y --nodocs update && \
     microdnf clean all
 
-EXPOSE 8080
-EXPOSE 8443
+EXPOSE 80
 COPY ./httpd-foreground /httpd-foreground
 CMD /httpd-foreground
 
@@ -20,24 +19,15 @@ ENV PATH=/venv/bin:${PATH} \
 # copy virtualenv dir which has been built inside the kiwitcms/buildroot container
 # this helps keep -devel dependencies outside of this image
 COPY ./dist/venv/ /venv
+RUN source /venv/bin/activate
+RUN pip install kiwitcms-trackers-integration && deactivate
 
 COPY ./manage.py /Kiwi/
 # create directories so we can properly set ownership for them
 RUN mkdir /Kiwi/ssl /Kiwi/static /Kiwi/uploads /Kiwi/etc
 COPY ./etc/*.conf /Kiwi/etc/
 
-# generate self-signed SSL certificate
-RUN /usr/bin/sscg -v -f \
-    --country BG --locality Sofia \
-    --organization "Kiwi TCMS" \
-    --organizational-unit "Quality Engineering" \
-    --ca-file       /Kiwi/static/ca.crt     \
-    --cert-file     /Kiwi/ssl/localhost.crt \
-    --cert-key-file /Kiwi/ssl/localhost.key
-RUN sed -i "s/tcms.settings.devel/tcms.settings.product/" /Kiwi/manage.py && \
-    ln -s /Kiwi/ssl/localhost.crt /etc/pki/tls/certs/localhost.crt && \
-    ln -s /Kiwi/ssl/localhost.key /etc/pki/tls/private/localhost.key
-
+RUN sed -i "s/tcms.settings.devel/tcms.settings.product/" /Kiwi/manage.py
 
 # collect static files
 RUN /Kiwi/manage.py collectstatic --noinput --link
