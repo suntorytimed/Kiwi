@@ -19,8 +19,6 @@ ENV PATH=/venv/bin:${PATH} \
 # copy virtualenv dir which has been built inside the kiwitcms/buildroot container
 # this helps keep -devel dependencies outside of this image
 COPY ./dist/venv/ /venv
-RUN source /venv/bin/activate
-RUN pip install kiwitcms-trackers-integration && deactivate
 
 COPY ./manage.py /Kiwi/
 # create directories so we can properly set ownership for them
